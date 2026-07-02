@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>日轨 · 项目管理</title>
+<style>
+  /* ============ 配色 · 清透浅蓝 / 净白奶油 · 零绿色 ============ */
+  :root{
+    --bg:            #FDFCF9;   /* 奶白背景 · 更白,微暖不发黄 */
+    --bg-soft:       #F3EFE8;
+    --panel:         #FFFFFE;   /* 面板 · 净白 */
+    --panel-2:       #FBF7F0;
+    --ink:           #22345A;   /* 主文字 · 深蓝墨 */
+    --ink-soft:      #556788;
+    --ink-mute:      #8894AC;
+    --line:          #ECE6D9;
+    --line-2:        #DED4BE;
+    --blue:          #A6DEF0;   /* 主色 · 🩵 清透天青浅蓝 */
+    --blue-2:        #C7E8F5;
+    --blue-3:        #6EC2DC;   /* 交互深一档 · 仍在 🩵 色调 */
+    --blue-soft:     #E4F3FA;   /* 蓝色气泡底 · 更亮 */
+    --blue-ink:      #2A6E85;
+    --clay:          #DBA47A;
+    --rose:          #E59A9A;
+    --lav:           #B39BD1;
+    --sand:          #E7C378;
+    --danger:        #D9695E;
+    --shadow:        0 8px 24px rgba(34,52,90,.10), 0 2px 6px rgba(34,52,90,.06);
+    --radius:        14px;
+    --radius-sm:     10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);}
+  body{
+    /* 极简底纹 · 🩵 天青蓝调 */
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(166,222,240,.32) 0, transparent 48%),
+      radial-gradient(circle at 88% 85%, rgba(199,232,245,.24) 0, transparent 50%),
+      radial-gradient(circle at 68% 28%, rgba(179,155,209,.10) 0, transparent 42%),
+      radial-gradient(rgba(34,52,90,.045) 1px, transparent 1px);
+    background-size: auto, auto, auto, 22px 22px;
+  }
+  button{font-family:inherit}
+  a{color:var(--blue-3);text-decoration:none}
+
+  /* ============ 布局 ============ */
+  .app{display:grid;grid-template-columns:260px 1fr;height:100vh;}
+  aside{
+    background:linear-gradient(180deg,var(--panel) 0%,var(--panel-2) 100%);
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  main{overflow:auto;padding:26px 34px 60px}
+  .brand{padding:22px 22px 14px;display:flex;align-items:center;gap:10px}
+  .brand .logo{
+    width:34px;height:34px;border-radius:10px;
+    background:
+      radial-gradient(circle at 30% 30%, #fff 0 2px, transparent 3px),
+      linear-gradient(135deg,var(--blue) 0%,var(--lav) 100%);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.4), var(--shadow);
+    position:relative;
+  }
+  .brand .logo::after{
+    content:"";position:absolute;left:6px;top:6px;width:22px;height:22px;border-radius:50%;
+    border:1.5px dashed rgba(255,255,255,.7);
+  }
+  .brand h1{font-size:18px;margin:0;letter-spacing:2px}
+  .brand small{display:block;color:var(--ink-mute);font-size:11px;letter-spacing:3px;margin-top:2px}
+
+  .nav-home{
+    margin:6px 14px 10px;padding:10px 12px;border-radius:var(--radius-sm);
+    display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink-soft);
+    border:1px solid transparent;
+  }
+  .nav-home.active,.nav-home:hover{background:var(--blue-soft);color:var(--ink);border-color:var(--line)}
+  .nav-home .dot{width:8px;height:8px;border-radius:50%;background:var(--blue-3)}
+
+  .side-title{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 20px 6px;color:var(--ink-mute);font-size:12px;letter-spacing:2px;
+  }
+  .side-title button{
+    background:transparent;border:1px dashed var(--line-2);color:var(--ink-soft);
+    border-radius:8px;padding:2px 8px;font-size:12px;cursor:pointer;
+  }
+  .side-title button:hover{background:var(--blue-soft);color:var(--ink)}
+
+  .tree{flex:1;overflow:auto;padding:4px 10px 20px}
+  .mod{margin:4px 0 6px;border-radius:var(--radius-sm);background:transparent}
+  .mod-head{
+    display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;cursor:pointer;
+    color:var(--ink-soft);
+  }
+  .mod-head:hover{background:var(--bg-soft)}
+  .mod-head .caret{transition:transform .2s;font-size:10px;color:var(--ink-mute)}
+  .mod.open .caret{transform:rotate(90deg)}
+  .mod-name{flex:1;font-size:13px;letter-spacing:1px}
+  .row-actions{display:none;gap:4px}
+  .mod-head:hover .row-actions,.proj:hover .row-actions{display:flex}
+  .row-actions button{
+    background:transparent;border:0;color:var(--ink-mute);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:6px;
+  }
+  .row-actions button:hover{background:var(--bg-soft);color:var(--ink)}
+  .projs{display:none;margin-left:14px;border-left:1px dashed var(--line-2);padding-left:8px}
+  .mod.open .projs{display:block}
+  .proj{
+    display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;cursor:pointer;
+    color:var(--ink-soft);font-size:13px;margin:2px 0;
+  }
+  .proj:hover{background:var(--bg-soft);color:var(--ink)}
+  .proj.active{background:var(--blue-soft);color:var(--ink)}
+  .proj .pdot{width:6px;height:6px;border-radius:50%;background:var(--clay)}
+  .proj.active .pdot{background:var(--blue-3)}
+  .empty-hint{color:var(--ink-mute);font-size:12px;padding:6px 12px}
+
+  /* ============ 顶部 ============ */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:16px;flex-wrap:wrap}
+  .crumb{color:var(--ink-mute);font-size:13px;letter-spacing:1px}
+  .crumb b{color:var(--ink);font-weight:600}
+  .search-wrap{display:flex;align-items:center;gap:8px}
+  .search{
+    display:flex;align-items:center;background:var(--panel);border:1px solid var(--line);
+    border-radius:999px;padding:6px 14px;box-shadow:var(--shadow);min-width:280px;
+  }
+  .search input{
+    border:0;outline:0;background:transparent;flex:1;padding:4px 8px;font-size:13px;color:var(--ink);
+  }
+  .search svg{width:14px;height:14px;color:var(--ink-mute)}
+
+  /* ============ 卡片/按钮 ============ */
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:20px;
+  }
+  .card + .card{margin-top:18px}
+  .card h2{margin:0 0 14px;font-size:15px;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+  .card h2 .bar{width:4px;height:14px;border-radius:2px;background:linear-gradient(180deg,var(--blue),var(--lav))}
+  .btn{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--blue);color:#fff;border:0;border-radius:999px;
+    padding:7px 16px;font-size:13px;cursor:pointer;box-shadow:var(--shadow);
+    transition:transform .15s ease, background .2s;
+  }
+  .btn:hover{background:var(--blue-3);transform:translateY(-1px)}
+  .btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line-2);box-shadow:none}
+  .btn.ghost:hover{background:var(--bg-soft);color:var(--ink)}
+  .btn.mini{padding:4px 10px;font-size:12px}
+  .btn.danger{background:var(--danger)}
+  .btn.danger:hover{background:#B37972}
+
+  .tabbar{
+    display:flex;gap:4px;padding:6px;background:var(--panel);border:1px solid var(--line);
+    border-radius:999px;box-shadow:var(--shadow);margin-bottom:18px;width:fit-content;
+  }
+  .tab{
+    padding:7px 18px;border-radius:999px;font-size:13px;color:var(--ink-soft);cursor:pointer;letter-spacing:1px;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active{background:var(--blue-soft);color:var(--ink)}
+
+  /* ============ 日历 ============ */
+  .cal{display:flex;gap:14px;align-items:stretch}
+  .cal-nav{
+    display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:8px 12px;
+  }
+  .cal-nav button{
+    background:transparent;border:0;font-size:14px;color:var(--ink-soft);padding:4px 8px;border-radius:8px;cursor:pointer;
+  }
+  .cal-nav button:hover{background:var(--bg-soft);color:var(--ink)}
+  .cal-title{font-size:14px;letter-spacing:1px;color:var(--ink)}
+  .today-btn{background:var(--sand);color:#4a3410;padding:4px 12px;border-radius:999px;font-size:12px;cursor:pointer;border:0;font-weight:500}
+  .today-btn:hover{filter:brightness(.97)}
+
+  .cal-grid{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+            box-shadow:var(--shadow);padding:14px;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;flex:1;min-width:0}
+  .cal-grid .wk{color:var(--ink-mute);font-size:12px;text-align:center;padding:4px 0}
+  .cal-grid .day{
+    padding:8px 0;border-radius:8px;text-align:center;font-size:13px;color:var(--ink-soft);cursor:pointer;position:relative;
+  }
+  .cal-grid .day:hover{background:var(--bg-soft);color:var(--ink)}
+  .cal-grid .day.out{color:var(--ink-mute);opacity:.55}
+  .cal-grid .day.today{background:var(--blue-soft);color:var(--ink);font-weight:600}
+  .cal-grid .day.selected{background:var(--blue);color:#fff;font-weight:600}
+  .cal-grid .day.has::after{
+    content:"";position:absolute;left:50%;bottom:5px;transform:translateX(-50%);
+    width:4px;height:4px;border-radius:50%;background:var(--clay);
+  }
+  .cal-grid .day.selected.has::after{background:#fff}
+
+  /* ============ 任务 ============ */
+  .task-item, .kb-item, .q-item{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;
+    display:flex;gap:10px;align-items:flex-start;position:relative;
+  }
+  .task-item.done{opacity:.55}
+  .task-item.done .task-text{text-decoration:line-through}
+  .task-item.archived{background:var(--bg-soft);opacity:.7}
+  .task-check{
+    width:18px;height:18px;border-radius:50%;border:2px solid var(--blue);flex:none;margin-top:2px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .task-check.checked{background:var(--blue);color:#fff}
+  .task-check.checked::after{content:"✓";font-size:11px}
+  .task-text{flex:1;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .item-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s}
+  .task-item:hover .item-actions,.kb-item:hover .item-actions,.q-item:hover .item-actions{opacity:1}
+  .item-actions button{background:transparent;border:0;color:var(--ink-mute);cursor:pointer;font-size:12px;padding:4px 6px;border-radius:6px}
+  .item-actions button:hover{background:var(--bg-soft);color:var(--ink)}
+  .task-add,.kb-add,.q-add{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+  .input, .textarea, select{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:9px 12px;font-size:13px;color:var(--ink);outline:0;flex:1;min-width:140px;font-family:inherit;
+  }
+  .input:focus,.textarea:focus,select:focus{border-color:var(--blue)}
+  .textarea{resize:vertical;min-height:60px;line-height:1.6}
+  .archived-toggle{color:var(--ink-mute);font-size:12px;cursor:pointer;padding:4px 8px;border-radius:6px}
+  .archived-toggle:hover{background:var(--bg-soft);color:var(--ink)}
+  .arc-sep{
+    display:flex;align-items:center;gap:8px;margin:14px 4px 8px;padding:4px 6px;border-radius:6px;
+    color:var(--ink-mute);font-size:12px;letter-spacing:2px;cursor:pointer;user-select:none;
+  }
+  .arc-sep:hover{background:var(--bg-soft);color:var(--ink)}
+  .arc-sep::before{content:"";flex:0 0 12px;height:1px;background:var(--line-2)}
+  .arc-sep::after{content:"";flex:1;height:1px;background:var(--line-2)}
+  .arc-caret{font-size:10px}
+  .badge{
+    display:inline-block;background:var(--blue-soft);color:var(--blue-ink);
+    padding:2px 8px;border-radius:999px;font-size:11px;margin-left:6px;font-weight:500;
+  }
+  .badge.clay{background:#F8E1CC;color:#8A4E22}
+  .badge.rose{background:#FADDDD;color:#8A3C3C}
+  .badge.lav{background:#EAE0F5;color:#4E3C74}
+  .badge.sand{background:#FBEAC1;color:#7C5A18}
+
+  /* ============ 知识库 ============ */
+  .kb-item{flex-direction:column;gap:8px}
+  .kb-head{display:flex;justify-content:space-between;align-items:center;width:100%}
+  .kb-title{font-size:14px;font-weight:600;color:var(--ink)}
+  .kb-meta{font-size:11px;color:var(--ink-mute);letter-spacing:1px}
+  .kb-body{font-size:13px;color:var(--ink-soft);line-height:1.7;white-space:pre-wrap;word-break:break-word;width:100%}
+  .kb-body img{max-width:100%;border-radius:8px;margin-top:6px;border:1px solid var(--line)}
+  .kb-body a{word-break:break-all}
+
+  /* ============ 问题区 ============ */
+  .q-item{flex-direction:column;gap:8px}
+  .q-head{display:flex;justify-content:space-between;align-items:center;width:100%}
+  .q-text{font-size:14px;color:var(--ink);line-height:1.6;white-space:pre-wrap;word-break:break-word;width:100%}
+  .q-answer{
+    background:var(--blue-soft);border-left:3px solid var(--blue-3);padding:10px 12px;border-radius:8px;
+    font-size:13px;color:var(--ink);line-height:1.7;white-space:pre-wrap;word-break:break-word;width:100%;
+  }
+  .q-answer.empty{background:transparent;border-left-style:dashed;border-color:var(--line-2);color:var(--ink-mute);cursor:text}
+
+  /* ============ 首页汇总 ============ */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:960px){.grid-2{grid-template-columns:1fr}.app{grid-template-columns:200px 1fr}}
+  .today-task-item{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;
+    display:flex;gap:10px;align-items:center;margin-bottom:8px;
+  }
+  .today-task-item .pill{
+    font-size:11px;padding:2px 8px;border-radius:999px;background:var(--blue-soft);color:var(--ink-soft);white-space:nowrap;
+  }
+  .today-task-item .t{flex:1;font-size:13px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+  .today-task-item.done .t{text-decoration:line-through;color:var(--ink-mute)}
+  .today-task-item .task-check{margin-top:0;width:16px;height:16px}
+  .search-hit{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px;cursor:pointer;
+  }
+  .search-hit:hover{background:var(--blue-soft)}
+  .search-hit .h-title{font-size:13px;color:var(--ink);margin-bottom:4px}
+  .search-hit .h-meta{font-size:11px;color:var(--ink-mute);letter-spacing:1px}
+  .search-hit .h-body{font-size:12px;color:var(--ink-soft);margin-top:4px;line-height:1.6;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  mark{background:#F3E4C6;color:#6E5327;padding:0 2px;border-radius:3px}
+
+  .empty-state{
+    padding:40px 20px;text-align:center;color:var(--ink-mute);font-size:13px;line-height:1.8;
+  }
+  .empty-state .k{font-size:32px;margin-bottom:6px}
+
+  /* ============ 弹窗 ============ */
+  .modal-mask{
+    position:fixed;inset:0;background:rgba(60,68,83,.35);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;z-index:99;
+  }
+  .modal-mask.show{display:flex}
+  .modal{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:22px 24px;width:min(420px,90vw);
+  }
+  .modal h3{margin:0 0 12px;font-size:15px}
+  .modal .row{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}
+  .modal input,.modal textarea{width:100%;margin-bottom:8px}
+
+  /* 提示条 */
+  .toast{
+    position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);opacity:0;
+    background:var(--ink);color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;
+    box-shadow:var(--shadow);transition:all .25s;z-index:200;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* 滚动条 */
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--ink-mute)}
+
+  .footer-note{color:var(--ink-mute);font-size:11px;text-align:center;margin-top:12px;letter-spacing:2px;padding:0 12px 16px}
+  .side-backup{display:flex;gap:8px;justify-content:center;padding:8px 12px 0}
+  .side-backup .btn{padding:5px 14px;font-size:12px}
+
+  /* ============ 产品周期 · 节点条 ============ */
+  .cycle{padding:6px 6px 4px}
+  .cycle-track-wrap{position:relative;padding:26px 8px 8px}
+  .cycle-line{
+    position:absolute;left:8px;right:8px;top:44px;height:4px;border-radius:2px;
+    background:linear-gradient(90deg, var(--line-2), var(--line-2));
+  }
+  .cycle-line .prog{
+    position:absolute;left:0;top:0;bottom:0;border-radius:2px;
+    background:linear-gradient(90deg, var(--blue), var(--blue-3));
+  }
+  .cycle-nodes{
+    position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;
+  }
+  .cycle-node{
+    flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;position:relative;cursor:pointer;
+  }
+  .cycle-node .dot{
+    width:20px;height:20px;border-radius:50%;background:#fff;
+    border:3px solid var(--line-2);box-shadow:0 2px 6px rgba(46,58,85,.08);
+    position:relative;z-index:2;transition:all .2s;
+  }
+  .cycle-node.reached .dot{ border-color:var(--blue-3); background:var(--blue) }
+  .cycle-node.current .dot{
+    border-color:var(--blue-3); background:var(--blue-3);
+    box-shadow:0 0 0 5px var(--blue-soft), 0 3px 10px rgba(76,130,187,.35);
+    transform:scale(1.1);
+  }
+  .cycle-node .label{
+    margin-top:10px;text-align:center;font-size:12px;line-height:1.4;color:var(--ink-soft);
+    max-width:120px;word-break:break-word;
+  }
+  .cycle-node.current .label{color:var(--ink);font-weight:600}
+  .cycle-node .date{font-size:11px;color:var(--ink-mute);margin-top:2px;letter-spacing:.5px}
+  .cycle-node .node-actions{
+    position:absolute;top:-4px;right:-2px;display:none;gap:2px;
+  }
+  .cycle-node:hover .node-actions{display:flex}
+  .cycle-node .node-actions button{
+    background:var(--panel);border:1px solid var(--line);color:var(--ink-mute);cursor:pointer;
+    width:20px;height:20px;border-radius:50%;font-size:10px;padding:0;display:flex;align-items:center;justify-content:center;
+  }
+  .cycle-node .node-actions button:hover{background:var(--blue-soft);color:var(--blue-ink)}
+
+  .cycle-empty{padding:16px;text-align:center;color:var(--ink-mute);font-size:13px}
+  .cycle-detail{
+    margin-top:16px;padding-top:14px;border-top:1px dashed var(--line-2);
+  }
+  .cycle-detail-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .cycle-detail-title{font-size:14px;font-weight:600;color:var(--ink)}
+  .cycle-detail-date{font-size:12px;color:var(--ink-mute)}
+  .cycle-todo{
+    display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:8px;
+    background:var(--panel-2);border:1px solid var(--line);margin-bottom:6px;
+  }
+  .cycle-todo.done .task-text{text-decoration:line-through;color:var(--ink-mute)}
+  .cycle-todo .task-check{margin-top:2px}
+  .cycle-add-node-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:26px;border-radius:50%;
+    background:var(--panel);border:2px dashed var(--line-2);color:var(--ink-mute);cursor:pointer;
+    font-size:14px;
+  }
+  .cycle-add-node-btn:hover{border-color:var(--blue);color:var(--blue-3);background:var(--blue-soft)}
+
+  /* ============ 分节标题 ============ */
+  .section-anchor{
+    display:flex;align-items:center;gap:8px;padding:24px 0 8px;color:var(--ink-mute);
+    font-size:12px;letter-spacing:3px;
+  }
+  .section-anchor::before,.section-anchor::after{
+    content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--line-2),transparent);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ 侧栏 ============ -->
+  <aside>
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>日轨</h1>
+        <small>RIGUI · 打工人日常</small>
+      </div>
+    </div>
+
+    <div class="nav-home active" id="navHome">
+      <span class="dot"></span>
+      <span>首页 · 今日</span>
+    </div>
+
+    <div class="side-title">
+      <span>模块 / 项目</span>
+      <button id="btnAddModule">+ 模块</button>
+    </div>
+    <div class="tree" id="tree"></div>
+
+    <div class="side-backup">
+      <button class="btn ghost mini" id="btnExport" title="下载全部数据为 JSON">备份</button>
+      <button class="btn ghost mini" id="btnImport" title="从 JSON 恢复">恢复</button>
+      <input type="file" id="fileImport" accept="application/json,.json" style="display:none" />
+    </div>
+    <div class="footer-note">数据存于本机浏览器 · 建议偶尔「备份」一下</div>
+  </aside>
+
+  <!-- ============ 主区 ============ -->
+  <main id="main"></main>
+</div>
+
+<!-- ============ 弹窗 ============ -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal" id="modalBox"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================================================================
+   日轨 · 单文件项目管理平台
+   数据存储:localStorage key = "rigui_v1"
+   =================================================================== */
+
+const STORAGE_KEY = "rigui_v1";
+
+/* ---------- 数据 ---------- */
+let db = loadDB();
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultDB();
+    const d = JSON.parse(raw);
+    return Object.assign(defaultDB(), d);
+  }catch(e){ return defaultDB(); }
+}
+function defaultDB(){
+  return {
+    modules: [],       // [{id,name, projects:[{id,name,tasks:{yyyy-mm-dd:[...] },kb:[],questions:[]}]}]
+    ui: { showArchived:false },
+    createdAt: Date.now(),
+  };
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
+
+/* ---------- 状态 ---------- */
+let state = {
+  view: "home",       // home | project
+  projectId: null,
+  moduleId: null,
+  date: todayStr(),
+  globalQuery: "",
+};
+
+/* ---------- 日期工具 ---------- */
+function todayStr(){
+  const d = new Date();
+  return fmt(d);
+}
+function fmt(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function addDays(s,n){ const d=parseDate(s); d.setDate(d.getDate()+n); return fmt(d); }
+function prettyDate(s){
+  const d = parseDate(s);
+  const t = todayStr();
+  const wk = ['日','一','二','三','四','五','六'][d.getDay()];
+  let tag = "";
+  if(s===t) tag = "（今天）";
+  else if(s===addDays(t,-1)) tag = "（昨天）";
+  else if(s===addDays(t,1)) tag = "（明天）";
+  return `${d.getFullYear()} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日 · 周${wk}${tag}`;
+}
+
+/* ---------- Toast / Modal ---------- */
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>el.classList.remove('show'), 1600);
+}
+function openModal(html){
+  const mask = document.getElementById('modalMask');
+  document.getElementById('modalBox').innerHTML = html;
+  mask.classList.add('show');
+}
+function closeModal(){ document.getElementById('modalMask').classList.remove('show'); }
+document.getElementById('modalMask').addEventListener('click', e=>{
+  if(e.target.id==='modalMask') closeModal();
+});
+
+function prompt2({title, placeholder="", value="", multiline=false, onOk}){
+  const inputHtml = multiline
+    ? `<textarea class="textarea" id="_pv" placeholder="${placeholder}" rows="4">${escapeHtml(value)}</textarea>`
+    : `<input class="input" id="_pv" placeholder="${placeholder}" value="${escapeAttr(value)}" />`;
+  openModal(`
+    <h3>${escapeHtml(title)}</h3>
+    ${inputHtml}
+    <div class="row">
+      <button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" id="_pOk">确定</button>
+    </div>
+  `);
+  const inp = document.getElementById('_pv');
+  inp.focus();
+  if(!multiline) inp.select();
+  document.getElementById('_pOk').onclick = ()=>{
+    const v = inp.value.trim();
+    if(!v){ toast("内容不能为空"); return; }
+    closeModal();
+    onOk(v);
+  };
+  inp.addEventListener('keydown', e=>{
+    if(e.key==='Enter' && !e.shiftKey && !multiline){ e.preventDefault(); document.getElementById('_pOk').click(); }
+  });
+}
+function confirm2({title, tip="", onOk}){
+  openModal(`
+    <h3>${escapeHtml(title)}</h3>
+    <p style="color:var(--ink-soft);font-size:13px;margin:6px 0 4px">${escapeHtml(tip)}</p>
+    <div class="row">
+      <button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn danger" id="_cOk">删除</button>
+    </div>
+  `);
+  document.getElementById('_cOk').onclick = ()=>{ closeModal(); onOk(); };
+}
+
+/* ---------- HTML 转义 ---------- */
+function escapeHtml(s){ return String(s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+function highlight(text, q){
+  if(!q) return escapeHtml(text||"");
+  const safe = escapeHtml(text||"");
+  const kw = q.trim();
+  if(!kw) return safe;
+  const re = new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+  return safe.replace(re, m=>`<mark>${m}</mark>`);
+}
+function linkify(text){
+  const safe = escapeHtml(text||"");
+  return safe.replace(/(https?:\/\/[^\s<]+)/g, u=>`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+}
+
+/* ---------- 查找 ---------- */
+function findModule(id){ return db.modules.find(m=>m.id===id); }
+function findProject(pid){
+  for(const m of db.modules){
+    const p = m.projects.find(p=>p.id===pid);
+    if(p) return {module:m, project:p};
+  }
+  return null;
+}
+
+/* ==============================================================
+   渲染 · 侧栏
+   ============================================================== */
+function renderTree(){
+  const tree = document.getElementById('tree');
+  if(db.modules.length===0){
+    tree.innerHTML = `<div class="empty-hint">还没有模块，点击右上「+ 模块」开始</div>`;
+    return;
+  }
+  tree.innerHTML = db.modules.map(m=>`
+    <div class="mod ${m._open!==false?'open':''}" data-mid="${m.id}">
+      <div class="mod-head" data-role="toggle">
+        <span class="caret">▶</span>
+        <span class="mod-name">${escapeHtml(m.name)}</span>
+        <span class="row-actions">
+          <button title="新增项目" data-act="addProj">+</button>
+          <button title="重命名" data-act="renameMod">✎</button>
+          <button title="删除" data-act="delMod">✕</button>
+        </span>
+      </div>
+      <div class="projs">
+        ${m.projects.map(p=>`
+          <div class="proj ${state.projectId===p.id?'active':''}" data-pid="${p.id}">
+            <span class="pdot"></span>
+            <span style="flex:1">${escapeHtml(p.name)}</span>
+            <span class="row-actions">
+              <button title="重命名" data-act="renameProj">✎</button>
+              <button title="删除" data-act="delProj">✕</button>
+            </span>
+          </div>
+        `).join('') || `<div class="empty-hint">暂无项目</div>`}
+      </div>
+    </div>
+  `).join('');
+
+  tree.querySelectorAll('.mod').forEach(modEl=>{
+    const mid = modEl.dataset.mid;
+    const mod = findModule(mid);
+    modEl.querySelector('.mod-head').addEventListener('click', e=>{
+      const btn = e.target.closest('button');
+      if(btn){
+        const act = btn.dataset.act;
+        e.stopPropagation();
+        if(act==='addProj') addProject(mid);
+        else if(act==='renameMod') renameModule(mid);
+        else if(act==='delMod') deleteModule(mid);
+        return;
+      }
+      mod._open = !(mod._open!==false);
+      save(); renderTree();
+    });
+    modEl.querySelectorAll('.proj').forEach(pEl=>{
+      const pid = pEl.dataset.pid;
+      pEl.addEventListener('click', e=>{
+        const btn = e.target.closest('button');
+        if(btn){
+          e.stopPropagation();
+          const act = btn.dataset.act;
+          if(act==='renameProj') renameProject(pid);
+          else if(act==='delProj') deleteProject(pid);
+          return;
+        }
+        openProject(pid);
+      });
+    });
+  });
+
+  document.getElementById('navHome').classList.toggle('active', state.view==='home');
+}
+
+/* ---------- 模块 / 项目操作 ---------- */
+function addModule(){
+  prompt2({title:"新增模块", placeholder:"例如：工作、学习、生活…", onOk:name=>{
+    db.modules.push({id:uid(), name, _open:true, projects:[]});
+    save(); renderTree(); toast("模块已创建");
+  }});
+}
+function renameModule(mid){
+  const m = findModule(mid); if(!m) return;
+  prompt2({title:"重命名模块", value:m.name, onOk:name=>{ m.name=name; save(); renderTree(); render(); }});
+}
+function deleteModule(mid){
+  const m = findModule(mid); if(!m) return;
+  confirm2({title:`删除模块「${m.name}」？`, tip:"该模块下所有项目及内容将一并删除，且不可恢复。", onOk:()=>{
+    db.modules = db.modules.filter(x=>x.id!==mid);
+    if(state.moduleId===mid){ state.view='home'; state.projectId=null; state.moduleId=null; }
+    save(); renderTree(); render(); toast("已删除");
+  }});
+}
+function addProject(mid){
+  const m = findModule(mid); if(!m) return;
+  prompt2({title:`在「${m.name}」中新增项目`, placeholder:"项目名", onOk:name=>{
+    const p = {id:uid(), name, tasks:{}, kb:[], questions:[]};
+    m.projects.push(p); m._open = true;
+    save(); renderTree(); openProject(p.id);
+  }});
+}
+function renameProject(pid){
+  const {project} = findProject(pid) || {};
+  if(!project) return;
+  prompt2({title:"重命名项目", value:project.name, onOk:name=>{ project.name=name; save(); renderTree(); render(); }});
+}
+function deleteProject(pid){
+  const info = findProject(pid); if(!info) return;
+  confirm2({title:`删除项目「${info.project.name}」？`, tip:"项目下所有任务、知识、问题将一并删除。", onOk:()=>{
+    info.module.projects = info.module.projects.filter(p=>p.id!==pid);
+    if(state.projectId===pid){ state.view='home'; state.projectId=null; state.moduleId=null; }
+    save(); renderTree(); render(); toast("已删除");
+  }});
+}
+function openProject(pid){
+  const info = findProject(pid); if(!info) return;
+  state.view = 'project';
+  state.projectId = pid;
+  state.moduleId = info.module.id;
+  state.date = todayStr();
+  state._projQuery = "";
+  renderTree(); render();
+}
+function goHome(){
+  state.view='home'; state.projectId=null; state.moduleId=null;
+  renderTree(); render();
+}
+document.getElementById('navHome').addEventListener('click', goHome);
+document.getElementById('btnAddModule').addEventListener('click', addModule);
+
+/* ==============================================================
+   渲染 · 主区
+   ============================================================== */
+function render(){
+  const main = document.getElementById('main');
+  if(state.view==='home') main.innerHTML = renderHome();
+  else if(state.view==='project') main.innerHTML = renderProject();
+  bindMain();
+}
+
+/* ---------- 首页 ---------- */
+function renderHome(){
+  const today = todayStr();
+  // 汇总今日任务
+  const todayTasks = [];
+  db.modules.forEach(m=>m.projects.forEach(p=>{
+    (p.tasks[today]||[]).forEach(t=>{
+      if(!t.archived) todayTasks.push({...t, moduleName:m.name, projectName:p.name, projectId:p.id});
+    });
+  }));
+
+  // 全局搜索
+  const q = state.globalQuery.trim();
+  let searchBlock = "";
+  if(q){
+    const hits = globalSearch(q);
+    searchBlock = `
+      <div class="card">
+        <h2><span class="bar"></span>搜索结果 · 关键词「${escapeHtml(q)}」 <span class="badge">共 ${hits.length} 条</span></h2>
+        ${hits.length===0
+          ? `<div class="empty-state"><div class="k">·</div>没有找到相关内容</div>`
+          : hits.map(h=>`
+            <div class="search-hit" data-pid="${h.projectId}" data-type="${h.type}">
+              <div class="h-title">${h.icon} ${highlight(h.title,q)}</div>
+              <div class="h-meta">${escapeHtml(h.moduleName)} / ${escapeHtml(h.projectName)} · ${h.typeLabel}${h.date?(' · '+h.date):''}</div>
+              ${h.body?`<div class="h-body">${highlight(h.body,q)}</div>`:''}
+            </div>
+          `).join('')}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="topbar">
+      <div class="crumb">首页 · <b>今日速览</b></div>
+      <div class="search-wrap">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="globalSearch" placeholder="搜索全部知识库 / 问题区 / 任务" value="${escapeAttr(state.globalQuery)}" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="bar"></span>今日任务 · ${prettyDate(today)} <span class="badge clay">${todayTasks.length} 待办</span></h2>
+      ${todayTasks.length===0
+        ? `<div class="empty-state"><div class="k">☁</div>今天还没有任务<br/>去项目里加一条，让日子有点样子</div>`
+        : todayTasks.map(t=>`
+            <div class="today-task-item ${t.done?'done':''}" data-pid="${t.projectId}" data-tid="${t.id}">
+              <div class="task-check ${t.done?'checked':''}" data-role="toggleHomeTask"></div>
+              <span class="pill">${escapeHtml(t.projectName)}</span>
+              <div class="t">${escapeHtml(t.text)}</div>
+            </div>
+        `).join('')}
+    </div>
+
+    ${searchBlock}
+
+    <div class="footer-note">日轨 · 循环有序 · 数据仅存于本地</div>
+  `;
+}
+
+/* ---------- 项目页(单页展示,自上而下:周期 → 任务 → 知识库 → 问题区) ---------- */
+function renderProject(){
+  const info = findProject(state.projectId);
+  if(!info) return renderHome();
+  const {module:mod, project:p} = info;
+
+  // 数据兼容:老结构没有 cycle 字段时补齐
+  if(!p.cycle) p.cycle = { nodes:[], currentId:null };
+  if(!Array.isArray(p.cycle.nodes)) p.cycle.nodes = [];
+
+  return `
+    <div class="topbar">
+      <div class="crumb">${escapeHtml(mod.name)} / <b>${escapeHtml(p.name)}</b></div>
+      <div class="search-wrap">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="projSearch" placeholder="在当前项目内搜索知识库 / 问题" />
+        </div>
+      </div>
+    </div>
+
+    ${renderCycle(p)}
+
+    <div class="section-anchor">每日任务</div>
+    ${renderTasks(p)}
+
+    <div class="section-anchor">知识库</div>
+    ${renderKB(p)}
+
+    <div class="section-anchor">问题区</div>
+    ${renderQuestions(p)}
+
+    <div class="footer-note">日轨 · 循环有序</div>
+  `;
+}
+
+/* ---------- 产品周期 ---------- */
+function renderCycle(p){
+  const nodes = (p.cycle.nodes || []).slice().sort((a,b)=>{
+    // 有日期的按日期升序,无日期的按创建时间
+    if(a.date && b.date) return a.date.localeCompare(b.date);
+    if(a.date) return -1;
+    if(b.date) return 1;
+    return (a.time||0)-(b.time||0);
+  });
+  const curId = p.cycle.currentId;
+  const curIdx = nodes.findIndex(n=>n.id===curId);
+
+  // 计算进度条百分比(到当前节点为止)
+  let progPct = 0;
+  if(nodes.length>1 && curIdx>=0){
+    progPct = (curIdx / (nodes.length-1)) * 100;
+  } else if(curIdx===0){
+    progPct = 0;
+  }
+
+  const curNode = nodes.find(n=>n.id===curId);
+  const total = nodes.length;
+  const doneCount = curIdx>=0 ? curIdx+1 : 0;
+
+  return `
+    <div class="card cycle">
+      <h2>
+        <span class="bar"></span>产品周期
+        ${total>0?`<span class="badge">${doneCount} / ${total}</span>`:''}
+        <span style="flex:1"></span>
+        <button class="btn mini" id="btnAddCycleNode">+ 新节点</button>
+      </h2>
+
+      ${nodes.length===0
+        ? `<div class="cycle-empty">还没有节点。点右上「+ 新节点」,把产品的关键里程碑排上来</div>`
+        : `
+        <div class="cycle-track-wrap">
+          <div class="cycle-line"><div class="prog" style="width:${progPct}%"></div></div>
+          <div class="cycle-nodes">
+            ${nodes.map((n,i)=>{
+              const reached = curIdx>=0 && i<=curIdx;
+              const isCur = n.id===curId;
+              return `
+                <div class="cycle-node ${reached?'reached':''} ${isCur?'current':''}" data-nid="${n.id}">
+                  <div class="dot"></div>
+                  <div class="node-actions">
+                    <button data-role="markCurrent" title="标为当前进展">◎</button>
+                    <button data-role="editNode" title="编辑">✎</button>
+                    <button data-role="delNode" title="删除">✕</button>
+                  </div>
+                  <div class="label">${escapeHtml(n.name)}</div>
+                  ${n.date?`<div class="date">${escapeHtml(n.date)}</div>`:''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        ${curNode ? `
+          <div class="cycle-detail">
+            <div class="cycle-detail-head">
+              <span class="cycle-detail-title">当前节点 · ${escapeHtml(curNode.name)}</span>
+              ${curNode.date?`<span class="cycle-detail-date">${escapeHtml(curNode.date)}</span>`:''}
+              <span style="flex:1"></span>
+              <span class="badge sand">项目级 TODO</span>
+            </div>
+            <div class="task-add">
+              <input class="input" id="newCycleTodo" placeholder="给这个节点加一个 to-do,回车添加" />
+              <button class="btn" id="btnAddCycleTodo">添加</button>
+            </div>
+            <div style="height:10px"></div>
+            ${(curNode.todos||[]).length===0
+              ? `<div class="empty-state" style="padding:16px"><div class="k">·</div>该节点还没有 to-do</div>`
+              : (curNode.todos||[]).map(td=>`
+                <div class="cycle-todo ${td.done?'done':''}" data-tdid="${td.id}">
+                  <div class="task-check ${td.done?'checked':''}" data-role="toggleCycleTodo"></div>
+                  <div class="task-text" style="flex:1">${escapeHtml(td.text)}</div>
+                  <div class="item-actions" style="opacity:1">
+                    <button data-role="editCycleTodo">✎</button>
+                    <button data-role="delCycleTodo">✕</button>
+                  </div>
+                </div>
+              `).join('')
+            }
+          </div>
+        ` : `<div class="cycle-empty" style="margin-top:12px">选中一个节点(点节点上的 ◎)以查看/维护它的 to-do</div>`}
+      `}
+    </div>
+  `;
+}
+
+/* ---------- 任务 + 日历 ---------- */
+function renderTasks(p){
+  const list = (p.tasks[state.date]||[]);
+  // 未完成排前面,已完成(=已归档)排后面
+  const active = list.filter(t=>!t.done);
+  const archived = list.filter(t=>t.done);
+  return `
+    <div class="grid-2">
+      <div>
+        ${renderCalendar(p)}
+      </div>
+      <div>
+        <div class="card">
+          <h2>
+            <span class="bar"></span>
+            ${prettyDate(state.date)}
+            <span class="badge">${active.length} 待办</span>
+            ${archived.length?`<span class="badge lav">${archived.length} 已归档</span>`:''}
+          </h2>
+
+          <div class="task-add">
+            <input class="input" id="newTask" placeholder="今天要做点什么？回车添加" />
+            <button class="btn" id="btnAddTask">添加</button>
+          </div>
+
+          <div style="height:12px"></div>
+
+          ${list.length===0
+            ? `<div class="empty-state"><div class="k">·</div>这一天还是空的</div>`
+            : active.map(t=>`
+              <div class="task-item" data-tid="${t.id}">
+                <div class="task-check" data-role="toggleTask" title="点击完成并归档"></div>
+                <div class="task-text">${escapeHtml(t.text)}</div>
+                <div class="item-actions">
+                  <button data-role="editTask" title="编辑">✎</button>
+                  <button data-role="delTask" title="删除">✕</button>
+                </div>
+              </div>
+            `).join('')
+              + (archived.length ? `
+                <div class="arc-sep" data-role="toggleArcCollapse">
+                  <span>已归档 · ${archived.length}</span>
+                  <span class="arc-caret">${state._arcCollapsed?'▸':'▾'}</span>
+                </div>
+                ${state._arcCollapsed ? '' : archived.map(t=>`
+                  <div class="task-item done archived" data-tid="${t.id}">
+                    <div class="task-check checked" data-role="toggleTask" title="点击恢复"></div>
+                    <div class="task-text">${escapeHtml(t.text)}</div>
+                    <div class="item-actions">
+                      <button data-role="editTask" title="编辑">✎</button>
+                      <button data-role="delTask" title="删除">✕</button>
+                    </div>
+                  </div>
+                `).join('')}
+              ` : '')
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCalendar(p){
+  const [Y,M] = (state._calYM || [Number(state.date.slice(0,4)), Number(state.date.slice(5,7))]);
+  state._calYM = [Y,M];
+  const first = new Date(Y, M-1, 1);
+  const startWk = first.getDay();
+  const daysInM = new Date(Y, M, 0).getDate();
+  const prevDays = new Date(Y, M-1, 0).getDate();
+
+  const cells = [];
+  for(let i=0;i<startWk;i++){
+    const day = prevDays - startWk + 1 + i;
+    const d = new Date(Y, M-2, day);
+    cells.push({d, out:true});
+  }
+  for(let i=1;i<=daysInM;i++){
+    cells.push({d:new Date(Y,M-1,i), out:false});
+  }
+  while(cells.length%7!==0 || cells.length<42){
+    const last = cells[cells.length-1].d;
+    const nd = new Date(last); nd.setDate(nd.getDate()+1);
+    cells.push({d:nd, out:nd.getMonth()!==M-1});
+    if(cells.length>=42) break;
+  }
+
+  const today = todayStr();
+  const cellsHtml = cells.map(c=>{
+    const s = fmt(c.d);
+    const has = (p.tasks[s]||[]).some(t=>!t.archived);
+    let cls = "day";
+    if(c.out) cls += " out";
+    if(s===today) cls += " today";
+    if(s===state.date) cls += " selected";
+    if(has) cls += " has";
+    return `<div class="${cls}" data-d="${s}">${c.d.getDate()}</div>`;
+  }).join('');
+
+  return `
+    <div class="card" style="margin-bottom:0">
+      <h2><span class="bar"></span>日历</h2>
+      <div class="cal-nav" style="margin-bottom:12px">
+        <button id="calPrev">‹</button>
+        <div class="cal-title" style="flex:1;text-align:center">${Y} 年 ${M} 月</div>
+        <button id="calNext">›</button>
+        <button class="today-btn" id="calToday">今天</button>
+      </div>
+      <div class="cal-grid">
+        ${['日','一','二','三','四','五','六'].map(w=>`<div class="wk">${w}</div>`).join('')}
+        ${cellsHtml}
+      </div>
+      <div style="color:var(--ink-mute);font-size:12px;margin-top:12px;letter-spacing:1px">
+        · 点选任意一天记录任务 · 有小圆点表示当天有任务
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- 知识库 ---------- */
+function renderKB(p){
+  const q = state._projQuery || "";
+  let list = p.kb.slice().sort((a,b)=>b.time-a.time);
+  if(q){
+    const kw = q.toLowerCase();
+    list = list.filter(k => (k.title+"\n"+k.content).toLowerCase().includes(kw));
+  }
+  return `
+    <div class="card">
+      <h2><span class="bar"></span>知识库 <span class="badge lav">${p.kb.length} 条</span>
+        <span style="flex:1"></span>
+        <button class="btn mini" id="btnAddKB">+ 新建</button>
+      </h2>
+      ${list.length===0
+        ? `<div class="empty-state"><div class="k">☰</div>${q?'没有匹配到相关内容':'点右上「+ 新建」，把踩过的坑、要点、链接都存进来'}</div>`
+        : list.map(k=>`
+          <div class="kb-item" data-kid="${k.id}">
+            <div class="kb-head">
+              <div class="kb-title">${k.type==='image'?'🖼 ':k.type==='link'?'🔗 ':'📝 '}${highlight(k.title||'(无标题)', q)}</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="kb-meta">${new Date(k.time).toLocaleString('zh-CN')}</span>
+                <div class="item-actions" style="opacity:1">
+                  <button data-role="editKB">✎</button>
+                  <button data-role="delKB">✕</button>
+                </div>
+              </div>
+            </div>
+            <div class="kb-body">${renderKBBody(k, q)}</div>
+          </div>
+        `).join('')}
+    </div>
+  `;
+}
+function renderKBBody(k, q){
+  if(k.type==='image' && k.image) {
+    return (k.content?`<div>${highlight(k.content,q)}</div>`:'') + `<img src="${k.image}" alt="" />`;
+  }
+  if(k.type==='link' && k.url){
+    return `<div><a href="${escapeAttr(k.url)}" target="_blank" rel="noopener">${escapeHtml(k.url)}</a></div>` +
+           (k.content?`<div style="margin-top:6px">${highlight(k.content,q)}</div>`:'');
+  }
+  // 文字：先 highlight（内部 escape 过），再对纯文本片段做 linkify
+  const safe = highlight(k.content||'', q);
+  // 把 http 链接自动转成 a 标签（避开 <mark>...</mark> 内部）
+  const linked = safe.replace(/(https?:\/\/[^\s<]+)/g, u=>`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+  return `<div>${linked}</div>`;
+}
+
+/* ---------- 问题区 ---------- */
+function renderQuestions(p){
+  const q = state._projQuery || "";
+  let list = p.questions.slice().sort((a,b)=>b.time-a.time);
+  if(q){
+    const kw = q.toLowerCase();
+    list = list.filter(x => (x.text+"\n"+(x.answer||"")).toLowerCase().includes(kw));
+  }
+  return `
+    <div class="card">
+      <h2><span class="bar"></span>问题区 <span class="badge rose">${p.questions.length} 条</span>
+        <span style="flex:1"></span>
+        <button class="btn mini" id="btnAddQ">+ 新问题</button>
+      </h2>
+      ${list.length===0
+        ? `<div class="empty-state"><div class="k">?</div>${q?'没有匹配到相关问题':'把还没想通的问题先记下来，随时补充思考'}</div>`
+        : list.map(x=>`
+          <div class="q-item" data-qid="${x.id}">
+            <div class="q-head">
+              <div class="q-text">Q · ${highlight(x.text, q)}</div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <span class="kb-meta">${new Date(x.time).toLocaleDateString('zh-CN')}</span>
+                <div class="item-actions" style="opacity:1">
+                  <button data-role="editQ">✎</button>
+                  <button data-role="delQ">✕</button>
+                </div>
+              </div>
+            </div>
+            <div class="q-answer ${x.answer?'':'empty'}" data-role="editAns">
+              ${x.answer? ('A · '+highlight(x.answer, q)) : '点此填写你的思考或答案…'}
+            </div>
+          </div>
+        `).join('')}
+    </div>
+  `;
+}
+
+/* ==============================================================
+   全局搜索
+   ============================================================== */
+function globalSearch(qRaw){
+  const q = qRaw.toLowerCase();
+  const hits = [];
+  db.modules.forEach(m=>m.projects.forEach(p=>{
+    // 任务
+    Object.entries(p.tasks).forEach(([date, arr])=>{
+      arr.forEach(t=>{
+        if(t.text.toLowerCase().includes(q)){
+          hits.push({type:'task', typeLabel:'任务', icon:'✓', title:t.text, body:'', date, projectId:p.id, moduleName:m.name, projectName:p.name});
+        }
+      });
+    });
+    // 知识库
+    p.kb.forEach(k=>{
+      if((k.title+"\n"+k.content+"\n"+(k.url||'')).toLowerCase().includes(q)){
+        hits.push({type:'kb', typeLabel:'知识库', icon: k.type==='image'?'🖼':k.type==='link'?'🔗':'📝',
+          title:k.title||'(无标题)', body:k.content||k.url||'', projectId:p.id, moduleName:m.name, projectName:p.name});
+      }
+    });
+    // 问题
+    p.questions.forEach(x=>{
+      if((x.text+"\n"+(x.answer||'')).toLowerCase().includes(q)){
+        hits.push({type:'q', typeLabel:'问题', icon:'?', title:x.text, body:x.answer||'', projectId:p.id, moduleName:m.name, projectName:p.name});
+      }
+    });
+  }));
+  return hits;
+}
+
+/* ==============================================================
+   事件绑定 · 主区
+   ============================================================== */
+function bindMain(){
+  // 全局搜索
+  const gs = document.getElementById('globalSearch');
+  if(gs){
+    gs.addEventListener('input', e=>{
+      state.globalQuery = e.target.value;
+      const main = document.getElementById('main');
+      main.innerHTML = renderHome();
+      bindMain();
+      const inp = document.getElementById('globalSearch');
+      if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+    });
+    // 点搜索结果 → 跳转
+    document.querySelectorAll('.search-hit').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const pid = el.dataset.pid;
+        const type = el.dataset.type;
+        openProject(pid);
+        // 单页布局:滚动到对应分节
+        setTimeout(()=>{
+          const main = document.getElementById('main');
+          const anchors = main.querySelectorAll('.section-anchor');
+          const idx = type==='kb'?1 : type==='q'?2 : 0;
+          if(anchors[idx]) anchors[idx].scrollIntoView({behavior:'smooth', block:'start'});
+        }, 30);
+      });
+    });
+    // 首页勾选任务(点击完成即归档)
+    document.querySelectorAll('[data-role="toggleHomeTask"]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const wrap = el.closest('.today-task-item');
+        const pid = wrap.dataset.pid, tid = wrap.dataset.tid;
+        const info = findProject(pid); if(!info) return;
+        const list = info.project.tasks[todayStr()]||[];
+        const t = list.find(x=>x.id===tid); if(!t) return;
+        t.done = !t.done; t.archived = t.done;
+        save(); render();
+      });
+    });
+  }
+
+  // 项目内搜索:只影响知识库/问题区筛选,整页重渲
+  const ps = document.getElementById('projSearch');
+  if(ps){
+    ps.value = state._projQuery||"";
+    ps.addEventListener('input', e=>{
+      state._projQuery = e.target.value;
+      render();
+      const inp = document.getElementById('projSearch');
+      if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+    });
+  }
+
+  bindProjectInner();
+}
+
+function bindProjectInner(){
+  const info = findProject(state.projectId);
+  if(!info) return;
+  const p = info.project;
+
+  /* ---- 产品周期 ---- */
+  const btnAddCycle = document.getElementById('btnAddCycleNode');
+  if(btnAddCycle) btnAddCycle.onclick = ()=>openCycleNodeEditor(p, null);
+  document.querySelectorAll('.cycle-node').forEach(el=>{
+    const nid = el.dataset.nid;
+    const n = (p.cycle.nodes||[]).find(x=>x.id===nid);
+    if(!n) return;
+    el.querySelector('[data-role="markCurrent"]')?.addEventListener('click', e=>{
+      e.stopPropagation();
+      p.cycle.currentId = (p.cycle.currentId===nid ? null : nid);
+      save(); render();
+    });
+    el.querySelector('[data-role="editNode"]')?.addEventListener('click', e=>{
+      e.stopPropagation(); openCycleNodeEditor(p, n);
+    });
+    el.querySelector('[data-role="delNode"]')?.addEventListener('click', e=>{
+      e.stopPropagation();
+      confirm2({title:`删除节点「${n.name}」？`, tip:"该节点下的 to-do 将一并删除。", onOk:()=>{
+        p.cycle.nodes = p.cycle.nodes.filter(x=>x.id!==nid);
+        if(p.cycle.currentId===nid) p.cycle.currentId = null;
+        save(); render();
+      }});
+    });
+    // 点节点主体 → 设为当前
+    el.addEventListener('click', ()=>{ p.cycle.currentId = nid; save(); render(); });
+  });
+  // 当前节点 · to-do
+  const curNode = (p.cycle.nodes||[]).find(n=>n.id===p.cycle.currentId);
+  if(curNode){
+    const inp = document.getElementById('newCycleTodo');
+    const btn = document.getElementById('btnAddCycleTodo');
+    const add = ()=>{
+      const v = inp.value.trim(); if(!v) return;
+      (curNode.todos = curNode.todos||[]).push({id:uid(), text:v, done:false, time:Date.now()});
+      inp.value=""; save(); render();
+    };
+    if(btn) btn.onclick = add;
+    if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') add(); });
+    document.querySelectorAll('.cycle-todo').forEach(tdEl=>{
+      const tdid = tdEl.dataset.tdid;
+      const td = (curNode.todos||[]).find(x=>x.id===tdid);
+      if(!td) return;
+      tdEl.querySelector('[data-role="toggleCycleTodo"]')?.addEventListener('click', ()=>{ td.done=!td.done; save(); render(); });
+      tdEl.querySelector('[data-role="editCycleTodo"]')?.addEventListener('click', ()=>{
+        prompt2({title:"编辑节点 to-do", value:td.text, multiline:true, onOk:v=>{ td.text=v; save(); render(); }});
+      });
+      tdEl.querySelector('[data-role="delCycleTodo"]')?.addEventListener('click', ()=>{
+        confirm2({title:"删除该 to-do？", onOk:()=>{
+          curNode.todos = (curNode.todos||[]).filter(x=>x.id!==tdid); save(); render();
+        }});
+      });
+    });
+  }
+
+  /* ---- 任务 tab ---- */
+  const inputEl = document.getElementById('newTask');
+  const btnAdd  = document.getElementById('btnAddTask');
+  if(inputEl && btnAdd){
+    const add = ()=>{
+      const v = inputEl.value.trim(); if(!v) return;
+      (p.tasks[state.date] = p.tasks[state.date]||[]).push({id:uid(), text:v, done:false, archived:false, time:Date.now()});
+      inputEl.value = ""; save(); render();
+    };
+    btnAdd.onclick = add;
+    inputEl.addEventListener('keydown', e=>{ if(e.key==='Enter') add(); });
+  }
+  document.querySelectorAll('.task-item').forEach(el=>{
+    const tid = el.dataset.tid;
+    const list = p.tasks[state.date]||[];
+    const t = list.find(x=>x.id===tid);
+    if(!t) return;
+    el.querySelector('[data-role="toggleTask"]')?.addEventListener('click', ()=>{
+      // 完成即归档;再次点击则同时取消归档
+      t.done = !t.done;
+      t.archived = t.done;
+      save(); render();
+    });
+    el.querySelector('[data-role="editTask"]')?.addEventListener('click', ()=>{
+      prompt2({title:"编辑任务", value:t.text, multiline:true, onOk:v=>{ t.text=v; save(); render(); }});
+    });
+    el.querySelector('[data-role="delTask"]')?.addEventListener('click', ()=>{
+      confirm2({title:"删除该任务？", onOk:()=>{
+        p.tasks[state.date] = list.filter(x=>x.id!==tid); save(); render();
+      }});
+    });
+  });
+  // 已归档折叠切换
+  const arcSep = document.querySelector('.arc-sep');
+  if(arcSep) arcSep.onclick = ()=>{ state._arcCollapsed = !state._arcCollapsed; render(); };
+
+  // 日历
+  const calPrev = document.getElementById('calPrev');
+  const calNext = document.getElementById('calNext');
+  const calToday = document.getElementById('calToday');
+  if(calPrev){
+    calPrev.onclick = ()=>{ let [Y,M] = state._calYM; M--; if(M<1){M=12;Y--;} state._calYM=[Y,M]; render(); };
+    calNext.onclick = ()=>{ let [Y,M] = state._calYM; M++; if(M>12){M=1;Y++;} state._calYM=[Y,M]; render(); };
+    calToday.onclick = ()=>{
+      state.date = todayStr();
+      state._calYM = [Number(state.date.slice(0,4)), Number(state.date.slice(5,7))];
+      render();
+    };
+  }
+  document.querySelectorAll('.cal-grid .day').forEach(el=>{
+    el.onclick = ()=>{
+      state.date = el.dataset.d;
+      state._calYM = [Number(state.date.slice(0,4)), Number(state.date.slice(5,7))];
+      render();
+    };
+  });
+
+  /* ---- KB tab ---- */
+  const btnAddKB = document.getElementById('btnAddKB');
+  if(btnAddKB) btnAddKB.onclick = ()=>openKBEditor(p, null);
+  document.querySelectorAll('.kb-item').forEach(el=>{
+    const kid = el.dataset.kid;
+    const k = p.kb.find(x=>x.id===kid);
+    el.querySelector('[data-role="editKB"]')?.addEventListener('click', e=>{ e.stopPropagation(); openKBEditor(p, k); });
+    el.querySelector('[data-role="delKB"]')?.addEventListener('click', e=>{
+      e.stopPropagation();
+      confirm2({title:"删除该知识条目？", onOk:()=>{ p.kb = p.kb.filter(x=>x.id!==kid); save(); render(); }});
+    });
+  });
+
+  /* ---- 问题 tab ---- */
+  const btnAddQ = document.getElementById('btnAddQ');
+  if(btnAddQ) btnAddQ.onclick = ()=>{
+    prompt2({title:"记录一个问题", placeholder:"这是什么问题？", multiline:true, onOk:v=>{
+      p.questions.push({id:uid(), text:v, answer:"", time:Date.now()}); save(); render();
+    }});
+  };
+  document.querySelectorAll('.q-item').forEach(el=>{
+    const qid = el.dataset.qid;
+    const x = p.questions.find(q=>q.id===qid);
+    el.querySelector('[data-role="editQ"]')?.addEventListener('click', e=>{ e.stopPropagation();
+      prompt2({title:"编辑问题", value:x.text, multiline:true, onOk:v=>{ x.text=v; save(); render(); }});
+    });
+    el.querySelector('[data-role="delQ"]')?.addEventListener('click', e=>{ e.stopPropagation();
+      confirm2({title:"删除该问题？", onOk:()=>{ p.questions = p.questions.filter(q=>q.id!==qid); save(); render(); }});
+    });
+    el.querySelector('[data-role="editAns"]')?.addEventListener('click', ()=>{
+      prompt2({title:"填写你的思考 / 答案", value:x.answer||"", multiline:true, onOk:v=>{ x.answer=v; save(); render(); }});
+    });
+  });
+}
+
+/* ---------- 周期节点编辑器 ---------- */
+function openCycleNodeEditor(project, n){
+  const isEdit = !!n;
+  const cur = n || {name:'', date:'', todos:[]};
+  openModal(`
+    <h3>${isEdit?'编辑节点':'新增节点'}</h3>
+    <input class="input" id="cnName" placeholder="节点名称,如：上线、第一批测试" value="${escapeAttr(cur.name||'')}" />
+    <div style="margin-top:8px">
+      <input class="input" type="date" id="cnDate" value="${escapeAttr(cur.date||'')}" />
+    </div>
+    <div class="row">
+      <button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" id="cnSave">保存</button>
+    </div>
+  `);
+  document.getElementById('cnName').focus();
+  document.getElementById('cnSave').onclick = ()=>{
+    const name = document.getElementById('cnName').value.trim();
+    const date = document.getElementById('cnDate').value.trim();
+    if(!name){ toast("节点名不能为空"); return; }
+    if(isEdit){ n.name=name; n.date=date; }
+    else{
+      const node = {id:uid(), name, date, todos:[], time:Date.now()};
+      project.cycle.nodes = project.cycle.nodes||[];
+      project.cycle.nodes.push(node);
+      // 若是第一个节点,自动设为当前
+      if(project.cycle.nodes.length===1) project.cycle.currentId = node.id;
+    }
+    save(); closeModal(); render();
+  };
+}
+
+/* ---------- 知识条目编辑器 ---------- */
+function openKBEditor(project, k){
+  const isEdit = !!k;
+  const cur = k || {type:'text', title:'', content:'', url:'', image:''};
+  openModal(`
+    <h3>${isEdit?'编辑知识':'新增知识'}</h3>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <label style="font-size:12px;color:var(--ink-soft)"><input type="radio" name="kbtype" value="text" ${cur.type==='text'?'checked':''}/> 文字</label>
+      <label style="font-size:12px;color:var(--ink-soft)"><input type="radio" name="kbtype" value="link" ${cur.type==='link'?'checked':''}/> 链接</label>
+      <label style="font-size:12px;color:var(--ink-soft)"><input type="radio" name="kbtype" value="image" ${cur.type==='image'?'checked':''}/> 图片</label>
+    </div>
+    <input class="input" id="kbTitle" placeholder="标题" value="${escapeAttr(cur.title)}" />
+    <div id="kbUrlWrap" style="display:${cur.type==='link'?'block':'none'};margin-top:8px">
+      <input class="input" id="kbUrl" placeholder="链接地址 https://…" value="${escapeAttr(cur.url||'')}" />
+    </div>
+    <div id="kbImgWrap" style="display:${cur.type==='image'?'block':'none'};margin-top:8px">
+      <input type="file" accept="image/*" id="kbImgFile" style="font-size:12px" />
+      ${cur.image?`<div style="margin-top:6px"><img src="${cur.image}" style="max-width:100%;border-radius:8px;border:1px solid var(--line)" id="kbImgPreview"/></div>`:'<div id="kbImgPreview"></div>'}
+    </div>
+    <textarea class="textarea" id="kbContent" placeholder="内容 / 描述（可选）" rows="4" style="margin-top:8px">${escapeHtml(cur.content)}</textarea>
+    <div class="row">
+      <button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" id="kbSave">保存</button>
+    </div>
+  `);
+  let imgData = cur.image || "";
+  document.querySelectorAll('input[name=kbtype]').forEach(r=>{
+    r.onchange = ()=>{
+      const v = document.querySelector('input[name=kbtype]:checked').value;
+      document.getElementById('kbUrlWrap').style.display = v==='link'?'block':'none';
+      document.getElementById('kbImgWrap').style.display = v==='image'?'block':'none';
+    };
+  });
+  const fileInp = document.getElementById('kbImgFile');
+  if(fileInp){
+    fileInp.onchange = ()=>{
+      const f = fileInp.files[0]; if(!f) return;
+      if(f.size > 2*1024*1024){ toast("图片建议 <2MB"); }
+      const r = new FileReader();
+      r.onload = ev=>{
+        imgData = ev.target.result;
+        const prev = document.getElementById('kbImgPreview');
+        prev.innerHTML = `<img src="${imgData}" style="max-width:100%;border-radius:8px;border:1px solid var(--line);margin-top:6px"/>`;
+      };
+      r.readAsDataURL(f);
+    };
+  }
+  document.getElementById('kbSave').onclick = ()=>{
+    const type = document.querySelector('input[name=kbtype]:checked').value;
+    const title = document.getElementById('kbTitle').value.trim();
+    const content = document.getElementById('kbContent').value.trim();
+    const url = document.getElementById('kbUrl')?.value.trim() || "";
+    if(!title && !content && !url && !imgData){ toast("填一点内容再保存吧"); return; }
+    const data = {type, title, content, url, image: type==='image'?imgData:''};
+    if(isEdit){
+      Object.assign(k, data);
+    } else {
+      project.kb.push({id:uid(), time:Date.now(), ...data});
+    }
+    save(); closeModal(); render(); toast(isEdit?"已更新":"已保存");
+  };
+}
+
+/* ==============================================================
+   导出 / 导入 · 备份
+   ============================================================== */
+function exportData(){
+  const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `日轨备份_${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 500);
+  toast("已导出备份文件");
+}
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    let data;
+    try{ data = JSON.parse(ev.target.result); }
+    catch(e){ toast("文件不是有效的 JSON"); return; }
+    if(!data || !Array.isArray(data.modules)){ toast("文件结构不匹配"); return; }
+    confirm2({
+      title:"确定恢复此备份？",
+      tip:"将覆盖当前所有数据(建议先「备份」一次现在的数据)。",
+      onOk:()=>{
+        db = Object.assign(defaultDB(), data);
+        save();
+        state.view='home'; state.projectId=null; state.moduleId=null;
+        renderTree(); render();
+        toast("已恢复");
+      }
+    });
+  };
+  reader.readAsText(file);
+}
+document.getElementById('btnExport').onclick = exportData;
+document.getElementById('btnImport').onclick = ()=>document.getElementById('fileImport').click();
+document.getElementById('fileImport').onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  importData(f);
+  e.target.value = "";
+};
+
+/* ==============================================================
+   启动
+   ============================================================== */
+renderTree();
+render();
+</script>
+</body>
+</html>
